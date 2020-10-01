@@ -6,6 +6,7 @@ const { google } = require('googleapis');
 const fs = require("fs");
 const formidable = require('formidable');
 const credentials = require('./credentials.json');
+const utils = require('./utils');
 
 const client_id = credentials.web.client_id;
 const client_secret = credentials.web.client_secret;
@@ -49,25 +50,17 @@ app.get('/user', (req, res) => {
 
     oauth2.userinfo.get((err, response) => {
         if (err) res.status(400).send(err);
-        console.log(response.data);
         res.send(response.data);
     })
 });
 
-app.get('/mails', (req, res) => {
+app.get('/mails', async (req, res) => {
     const token = JSON.parse(req.headers.token);
     if (token == null) return res.status(400).send('Token not found');
     oAuth2Client.setCredentials(token);
     const oauth2 = google.oauth2({ version: 'v2', auth: oAuth2Client });
-    const gmail = google.gmail({ version: 'v1', oauth2 });
-    gmail.users.messages.list({
-        auth: oAuth2Client,
-        userId: 'me',
-        maxResults: 10,
-        q: ""
-    }, function (err, response) {
-        res.send(response.data.messages);
-    });
+    const mails = await utils.findMessages(oAuth2Client);
+    res.send(mails);
 });
 
 app.get('/files', (req, res) => {
